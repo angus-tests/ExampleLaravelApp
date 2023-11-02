@@ -1,0 +1,27 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Starting test & deploy...
+
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Example Laravel Docker test image...
+      - docker build --target test -t example-laravel-test .
+      - echo Running tests...
+      - docker run example-laravel-test /start.sh
+
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Building the Example Laravel Docker production image...
+      - docker build --target prod -t example-laravel .
+      - docker tag my-app-prod:latest $AWS_ACCOUNT_ID.dkr.ecr.eu-west-2.amazonaws.com/example-laravel:latest
+      - echo Pushing the Docker image...
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.eu-west-2.amazonaws.com/example-laravel:latest
+
+cache:
+  paths:
+    - '/root/.composer/cache/**/*'
