@@ -18,9 +18,9 @@ phases:
       - echo Build completed on `date`
       - echo Building the Example Laravel Docker production image...
       - docker build --target prod -t example-laravel .
-      - docker tag my-app-prod:latest $AWS_ACCOUNT_ID.dkr.ecr.eu-west-2.amazonaws.com/example-laravel:latest
+      - docker tag my-app-prod:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest
       - echo Pushing the Docker image...
-      - docker push $AWS_ACCOUNT_ID.dkr.ecr.eu-west-2.amazonaws.com/example-laravel:latest
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest
 
 cache:
   paths:
