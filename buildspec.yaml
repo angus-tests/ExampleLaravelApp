@@ -9,9 +9,9 @@ phases:
     commands:
       - echo Build started on `date`
       - echo Building the Example Laravel Docker test image...
-      - docker build --target test -t example-laravel-test .
+      - docker build --target test -t example-laravel:test .
       - echo Running tests...
-      - docker run example-laravel-test /start.sh
+      - docker run example-laravel:test
 
   post_build:
     commands:
