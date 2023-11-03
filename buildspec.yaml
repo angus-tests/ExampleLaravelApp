@@ -1,23 +1,27 @@
 version: 0.2
 
 phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
   build:
     commands:
       - echo Build started on `date`
-      - echo Building the Example Laravel Docker test image...
-      - docker build --target test -t example-laravel:test .
-      - echo Running tests...
-      - docker run example-laravel:test
+      - echo Building the Example Laravel Docker production image...
+      - docker build --target prod -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest .
   post_build:
     commands:
       - echo Build completed on `date`
-      - echo Building the Example Laravel Docker production image...
-      - docker build --target prod -t example-laravel:latest .
-      - echo Saving the Docker image to a tar file...
-      - docker save example-laravel:latest > example-laravel.tar
-      - echo Packaging the Docker image and Dockerrun.aws.json into a zip file...
-      - zip -r example-laravel.zip example-laravel.tar Dockerrun.aws.json
+      - echo Pushing the Docker image...
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest
+      - echo Creating Dockerrun.aws.json...
+      - printf '{"AWSEBDockerrunVersion": "1","Image": {"Name": "%s.dkr.ecr.%s.amazonaws.com/example-laravel:latest","Update": "true"},"Ports": [{"ContainerPort": "80"}],"Logging": "/var/log/nginx"}' $AWS_ACCOUNT_ID $AWS_DEFAULT_REGION > Dockerrun.aws.json
+      - echo Zipping up the Dockerrun.aws.json...
+      - zip -r example-laravel.zip Dockerrun.aws.json
 
 artifacts:
   files:
     - example-laravel.zip
+
+# Note: No need to include the Docker image in the zip file as it's already pushed to ECR.
