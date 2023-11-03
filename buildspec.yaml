@@ -16,12 +16,11 @@ phases:
       - echo Pushing the Docker image...
       - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest
       - echo Creating Dockerrun.aws.json...
-      - printf '{"AWSEBDockerrunVersion": "1","Image": {"Name": "%s.dkr.ecr.%s.amazonaws.com/example-laravel:latest","Update": "true"},"Ports": [{"ContainerPort": "80"}],"Logging": "/var/log/nginx"}' $AWS_ACCOUNT_ID $AWS_DEFAULT_REGION > Dockerrun.aws.json
+      - |
+        printf '{"AWSEBDockerrunVersion": "1","Image": { "Name": "%s.dkr.ecr.%s.amazonaws.com/example-laravel:latest","Update": "true" },"Ports": [ { "ContainerPort": "80" } ],"Logging": "/var/log/nginx" }' $AWS_ACCOUNT_ID $AWS_DEFAULT_REGION > Dockerrun.aws.json
       - echo Zipping up the Dockerrun.aws.json...
       - zip -r example-laravel.zip Dockerrun.aws.json
 
 artifacts:
   files:
     - example-laravel.zip
-
-# Note: No need to include the Docker image in the zip file as it's already pushed to ECR.
