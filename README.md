@@ -1,4 +1,4 @@
-# LaraVellous
+# ExampleLaravelApp
 
 ## Overview
 LaraVellous is a template for Laravel applications.
