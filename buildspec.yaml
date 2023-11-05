@@ -11,13 +11,13 @@ phases:
     commands:
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-      - docker pull $CONTAINER_REPOSITORY_URL:$TAG_NAME || true
+      - docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest || true
 
   build:
     commands:
       - echo Build started on `date`
       - echo Building the Docker production image...
-      - docker build --cache-from $CONTAINER_REPOSITORY_URL:$TAG_NAME --tag $CONTAINER_REPOSITORY_URL:$TAG_NAME .
+      - docker build --cache-from $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest  --tag $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest  .
   post_build:
     commands:
       - echo Build completed on `date`
@@ -25,7 +25,7 @@ phases:
       - docker push $CONTAINER_REPOSITORY_URL
       - echo Generating Dockerrun.aws.json...
       - >
-        printf '{"AWSEBDockerrunVersion": "1","Image": {"Name": "%s", "Update": "true"},"Ports": [{"ContainerPort": "80"}],"Logging": "/var/log/nginx"}' "$CONTAINER_REPOSITORY_URL" > Dockerrun.aws.json
+        printf '{"AWSEBDockerrunVersion": "1","Image": {"Name": "%s.dkr.ecr.%s.amazonaws.com/example-laravel:latest", "Update": "true"},"Ports": [{"ContainerPort": "80"}],"Logging": "/var/log/nginx"}' $AWS_ACCOUNT_ID $AWS_DEFAULT_REGION > Dockerrun.aws.json
       - echo Generating .ebextensions...
       - mkdir -p .ebextensions
       - >
