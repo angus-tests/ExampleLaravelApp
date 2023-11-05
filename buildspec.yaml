@@ -33,7 +33,7 @@ phases:
           for env_var in $SECRETS; do
            echo "      - $env_var" >> docker-compose.yaml
           done
-      - echo "    ports:\n      - '80:80'" >> docker-compose.yaml
+      - printf "    ports:\n      - '80:80'\n" >> docker-compose.yaml
 
 artifacts:
   files:
