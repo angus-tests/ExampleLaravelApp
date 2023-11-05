@@ -40,7 +40,7 @@ return [
             'database' => ':memory:',
             'prefix'   => '',
         ],
-        
+
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DATABASE_URL'),
@@ -48,10 +48,7 @@ return [
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
         ],
-
-        'mysql' => [
-                    
-
+        
         'mysql' => [
             'driver' => 'mysql',
             'host' => env('DB_HOST') ?: $_SERVER['RDS_HOSTNAME'],
