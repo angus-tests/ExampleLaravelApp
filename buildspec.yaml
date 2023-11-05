@@ -24,10 +24,12 @@ phases:
       - echo Pushing the Docker image...
       - docker push $CONTAINER_REPOSITORY_URL
       - echo Generating Dockerrun.aws.json...
-      - printf '{"AWSEBDockerrunVersion": "1","Image": {"Name": "%s", "Update": "true"},"Ports": [{"ContainerPort": "80"}],"Logging": "/var/log/nginx"}' "$CONTAINER_REPOSITORY_URL" > Dockerrun.aws.json
+      - >
+        printf '{"AWSEBDockerrunVersion": "1","Image": {"Name": "%s", "Update": "true"},"Ports": [{"ContainerPort": "80"}],"Logging": "/var/log/nginx"}' "$CONTAINER_REPOSITORY_URL" > Dockerrun.aws.json
       - echo Generating .ebextensions...
       - mkdir -p .ebextensions
-      - printf 'Resources:\n  AWSEBAutoScalingGroup:\n    Metadata:\n      AWS::CloudFormation::Authentication:\n        S3AccessCreds:\n          type: S3\n          roleName: aws-elasticbeanstalk-ec2-role\n      AWS::CloudFormation::Init:\n        configSets:\n          default:\n            - config\n        config:\n          commands:\n            01-get-secrets:\n              command: "/opt/elasticbeanstalk/bin/get-config environment -k SECRET_STRING | jq -r \'.SecretString\' | jq -r \'to_entries|map(\\\"export \\\(.key)=\\\(.value|tostring)\\\")|.[]\' > /opt/elasticbeanstalk/hooks/appdeploy/enact/99myappenv.sh"\n' $AWS_DEFAULT_REGION > .ebextensions/01_env.config
+      - >
+        printf 'Resources:\n  AWSEBAutoScalingGroup:\n    Metadata:\n      AWS::CloudFormation::Authentication:\n        S3AccessCreds:\n          type: S3\n          roleName: aws-elasticbeanstalk-ec2-role\n      AWS::CloudFormation::Init:\n        configSets:\n          default:\n            - config\n        config:\n          commands:\n            01-get-secrets:\n              command: "/opt/elasticbeanstalk/bin/get-config environment -k SECRET_STRING | jq -r .SecretString | jq -r \\\'to_entries|map(\\\\\\\"export \\\\\\\\(\\\\\\\".key\\\\\\\")=\\\\\\\"\\\\\\\(\\\\\\\".value|tostring\\\\\\\")\\\\\\\")|.[]\\\\\\\' > /opt/elasticbeanstalk/hooks/appdeploy/enact/99myappenv.sh"\n' $AWS_DEFAULT_REGION > .ebextensions/01_env.config
       - echo Zipping up the deployment package...
       - zip -r deployment.zip Dockerrun.aws.json .ebextensions
 
