@@ -4,22 +4,28 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION
   build:
     commands:
       - echo Build started on `date`
-      - echo Building the Example Laravel Docker production image...
-      - docker build --target prod -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest .
+      - echo Building the Docker production image...
+      - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest .
   post_build:
     commands:
       - echo Build completed on `date`
       - echo Pushing the Docker image...
       - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest
-      - echo Creating Dockerrun.aws.json...
-      - |
-        printf '{"AWSEBDockerrunVersion": "1","Image": { "Name": "%s.dkr.ecr.%s.amazonaws.com/example-laravel:latest","Update": "true" },"Ports": [ { "ContainerPort": "80" } ],"Logging": "/var/log/nginx" }' $AWS_ACCOUNT_ID $AWS_DEFAULT_REGION > Dockerrun.aws.json
-
+      - echo Generating Dockerrun.aws.json...
+      - >
+        printf '{"AWSEBDockerrunVersion": "1","Image": {"Name": "%s.dkr.ecr.%s.amazonaws.com/example-laravel:latest", "Update": "true"},"Ports": [{"ContainerPort": "80"}],"Logging": "/var/log/nginx"}' 
+        $AWS_ACCOUNT_ID $AWS_DEFAULT_REGION > Dockerrun.aws.json
+      - echo Generating .ebextensions...
+      - mkdir -p .ebextensions
+      - >
+        printf 'Resources:\n  AWSEBAutoScalingGroup:\n    Metadata:\n      AWS::CloudFormation::Authentication:\n        S3AccessCreds:\n          type: S3\n          roleName: aws-elasticbeanstalk-ec2-role\n      AWS::CloudFormation::Init:\n        configSets:\n          default:\n            - config\n        config:\n          commands:\n            01-get-secrets:\n              command: "aws secretsmanager get-secret-value --secret-id ExampleLaravelEnv --region %s | jq -r .SecretString | jq -r \'to_entries|map(\\\"export \\\(.key)=\\\(.value|tostring)\\\")|.[]\' > /opt/elasticbeanstalk/hooks/appdeploy/enact/99myappenv.sh"\n' $AWS_DEFAULT_REGION > .ebextensions/01_env.config
+      - echo Zipping up the deployment package...
+      - zip -r deployment.zip Dockerrun.aws.json .ebextensions
 
 artifacts:
   files:
-    - Dockerrun.aws.json
+    - deployment.zip
