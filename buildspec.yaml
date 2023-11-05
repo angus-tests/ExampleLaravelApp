@@ -10,7 +10,7 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - $(aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $CONTAINER_REPOSITORY_URL)
       - docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest || true
 
   build:
@@ -18,19 +18,23 @@ phases:
       - echo Build started on `date`
       - echo Building the Docker production image...
       - docker build --cache-from $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest  --tag $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest  .
+
   post_build:
     commands:
       - echo Build completed on `date`
       - echo Pushing the Docker image...
       - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest
-      - echo Generating the Dockerfile...
-      - echo "FROM $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest" > Dockerfile
-      - echo Generating the docker-compose...
+      - echo Retrieving secret environment variables...
+      - SECRETS=$(aws secretsmanager get-secret-value --secret-id $SECRET_ID --region $AWS_DEFAULT_REGION --query SecretString --output text | jq -r "to_entries|map(\"\(.key)=\(.value|tostring)\")|.[]")
+      - echo Generating the docker-compose.yaml with embedded environment variables...
       - |
-        echo -e "version: '3'\nservices:\n  web:\n    build: .\n    ports:\n      - '80:80'" > docker-compose.yml
-      - echo Zipping up the deployment package...
-      - zip -r deployment.zip Dockerfile docker-compose.yml .ebextensions
+          printf "version: '3'\nservices:\n  web:\n    image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest\n    environment:\n" > docker-compose.yaml
+      - |
+          for env_var in $SECRETS; do
+           echo "      - $env_var" >> docker-compose.yaml
+          done
+      - echo "    ports:\n      - '80:80'" >> docker-compose.yaml
 
 artifacts:
   files:
-    - deployment.zip
+    - docker-compose.yaml
