@@ -23,11 +23,13 @@ phases:
       - echo Build completed on `date`
       - echo Pushing the Docker image...
       - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest
-      - echo Generating Dockerrun.aws.json...
-      - >
-        printf '{"AWSEBDockerrunVersion": "1","Image": {"Name": "%s.dkr.ecr.%s.amazonaws.com/example-laravel:latest", "Update": "true"},"Ports": [{"ContainerPort": "80"}],"Logging": "/var/log/nginx"}' $AWS_ACCOUNT_ID $AWS_DEFAULT_REGION > Dockerrun.aws.json
+      - echo Generating the Dockerfile...
+      - echo "FROM $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/example-laravel:latest" > Dockerfile
+      - echo Generating the docker-compose...
+      - |
+        echo -e "version: '3'\nservices:\n  web:\n    build: .\n    ports:\n      - '80:80'" > docker-compose.yml
       - echo Zipping up the deployment package...
-      - zip -r deployment.zip Dockerrun.aws.json .ebextensions
+      - zip -r deployment.zip Dockerfile .ebextensions docker-compose.yaml
 
 artifacts:
   files:
